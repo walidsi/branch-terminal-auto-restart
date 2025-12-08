@@ -1,0 +1,1 @@
+﻿/* Paste the same extension.js content here as in the bash script above */

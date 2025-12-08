@@ -1,0 +1,30 @@
+﻿{
+  "name": "branch-terminal-auto-restart",
+  "displayName": "Branch Terminal Auto Restart",
+  "description": "Automatically restart the integrated terminal when the Git branch changes.",
+  "version": "0.1.0",
+  "publisher": "Walid Ismail",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/walidsi/branch-terminal-auto-restart"
+  },
+  "engines": {
+    "vscode": "^1.50.0"
+  },
+  "main": "./extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "branchTerminal.restartNow",
+        "title": "Branch Terminal: Restart terminals now"
+      }
+    ]
+  },
+  "scripts": {
+    "package": "npx vsce package"
+  },
+  "files": ["extension.js","README.md","LICENSE","CHANGELOG.md","images/**",".github/**"]
+}
