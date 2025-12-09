@@ -12,6 +12,7 @@
     "url": "https://github.com/walidsi/branch-terminal-auto-restart/issues"
   },
   "homepage": "https://github.com/walidsi/branch-terminal-auto-restart/blob/master/README.md",
+  "icon": "images/icon.svg",
   "engines": {
     "vscode": "^1.50.0"
   },
