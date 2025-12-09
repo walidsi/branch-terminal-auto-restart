@@ -1,1 +1,9 @@
-﻿.vscode
+.vscode
+.git
+.gitignore
+.vscodeignore
+test
+node_modules
+**/*.map
+.eslintrc.json
+.vscode-test
