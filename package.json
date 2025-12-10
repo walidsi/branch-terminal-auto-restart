@@ -77,7 +77,7 @@
     "README.md",
     "LICENSE",
     "CHANGELOG.md",
-    "images/**",
+    "images/icon.png",
     ".github/**"
   ],
   "devDependencies": {
