@@ -10,6 +10,9 @@ function activate(context) {
     return;
   }
 
+  // Clear disposables from any previous activation
+  disposables = [];
+
   // register manual command
   context.subscriptions.push(
     vscode.commands.registerCommand('branchTerminal.restartNow', async () => {
@@ -32,21 +35,29 @@ function activate(context) {
     Promise.resolve(gitExt.activate && gitExt.activate())
       .catch(() => {})
       .then(() => {
+        let gitApiSuccess = false;
+        const localDisposables = []; // Track disposables created in this attempt
         try {
           const git = gitExt.exports && gitExt.exports.getAPI && gitExt.exports.getAPI(1);
           if (git) {
             // Listen for repositories opened/closed
             if (typeof git.onDidOpenRepository === 'function') {
-              disposables.push(git.onDidOpenRepository((r) => watchRepository(r)));
+              const d = git.onDidOpenRepository((r) => watchRepository(r));
+              localDisposables.push(d);
+              disposables.push(d);
             }
             if (typeof git.onDidCloseRepository === 'function') {
-              disposables.push(git.onDidCloseRepository((r) => unwatchRepository(r)));
+              const d = git.onDidCloseRepository((r) => unwatchRepository(r));
+              localDisposables.push(d);
+              disposables.push(d);
             }
 
             // Start watching existing repos
             if (Array.isArray(git.repositories)) {
               git.repositories.forEach(r => watchRepository(r));
             }
+
+            gitApiSuccess = true;
             // Removed incorrect usage of context.subscriptions.push(...disposables)
             // Disposables are managed by the cleanup block below.
             return;
@@ -56,8 +67,13 @@ function activate(context) {
           console.error('branch-terminal: git API error', e);
         }
 
-        // If we reach here, fallback to file watcher if enabled
-        if (cfg.get('fallbackToFileWatcher', true)) {
+        // Register any disposables that were created in this attempt
+        if (localDisposables.length > 0) {
+          context.subscriptions.push(...localDisposables);
+        }
+
+        // If Git API didn't work, fallback to file watcher if enabled
+        if (!gitApiSuccess && cfg.get('fallbackToFileWatcher', true)) {
           setupFileWatcher(context);
         }
       });
