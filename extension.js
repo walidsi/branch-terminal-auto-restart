@@ -9,6 +9,9 @@ function activate(context) {
     return;
   }
 
+  // Clear disposables from any previous activation
+  disposables = [];
+
   // register manual command
   context.subscriptions.push(
     vscode.commands.registerCommand('branchTerminal.restartNow', async () => {
@@ -32,15 +35,20 @@ function activate(context) {
       .catch(() => {})
       .then(() => {
         let gitApiSuccess = false;
+        const localDisposables = []; // Track disposables created in this attempt
         try {
           const git = gitExt.exports && gitExt.exports.getAPI && gitExt.exports.getAPI(1);
           if (git) {
             // Listen for repositories opened/closed
             if (typeof git.onDidOpenRepository === 'function') {
-              disposables.push(git.onDidOpenRepository((r) => watchRepository(r)));
+              const d = git.onDidOpenRepository((r) => watchRepository(r));
+              localDisposables.push(d);
+              disposables.push(d);
             }
             if (typeof git.onDidCloseRepository === 'function') {
-              disposables.push(git.onDidCloseRepository((r) => unwatchRepository(r)));
+              const d = git.onDidCloseRepository((r) => unwatchRepository(r));
+              localDisposables.push(d);
+              disposables.push(d);
             }
 
             // Start watching existing repos
@@ -55,9 +63,9 @@ function activate(context) {
           console.error('branch-terminal: git API error', e);
         }
 
-        // Register any disposables that were created
-        if (disposables.length > 0) {
-          context.subscriptions.push(...disposables);
+        // Register any disposables that were created in this attempt
+        if (localDisposables.length > 0) {
+          context.subscriptions.push(...localDisposables);
         }
 
         // If Git API didn't work, fallback to file watcher if enabled
@@ -81,6 +89,7 @@ function activate(context) {
       }
       repoState.clear();
       disposables.forEach(d => d && d.dispose && d.dispose());
+      disposables = [];
     }
   });
 }
