@@ -180,13 +180,9 @@ async function restartTerminalsForBranch(branch, repo) {
   s.lastLabel = label;
   repoState.set(root, s);
 
-  // Kill old integrated terminals that match our prefix (instead of killAll)
+  // Kill all integrated terminals and open a new one (Original behavior)
   try {
-    vscode.window.terminals.forEach(t => {
-      if (t.name.startsWith(prefix)) {
-        t.dispose();
-      }
-    });
+    await vscode.commands.executeCommand('workbench.action.terminal.killAll');
   } catch (e) {
     console.error('branch-terminal: failed to kill terminals', e);
   }
@@ -263,13 +259,9 @@ async function handleHeadFile(uri) {
     s.lastLabel = label;
     repoState.set(key, s);
 
-    // Kill old integrated terminals that match our prefix (instead of killAll)
+    // Kill all integrated terminals and open a new one (Original behavior)
     try {
-      vscode.window.terminals.forEach(t => {
-        if (t.name.startsWith(prefix)) {
-          t.dispose();
-        }
-      });
+      await vscode.commands.executeCommand('workbench.action.terminal.killAll');
     } catch (e) {
       console.error('branch-terminal: failed to kill terminals', e);
     }
