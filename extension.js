@@ -118,13 +118,13 @@ function watchRepository(repo) {
 
   // try to subscribe to repository state changes (Repository.state.onDidChange)
   if (repo.state && typeof repo.state.onDidChange === 'function') {
+    repoState.set(root, { lastLabel: null, timer: null });
     const disposable = repo.state.onDidChange(() => {
       scheduleRepositoryCheck(root, repo, debounceMs);
     });
     disposables.push(disposable);
     // initial sync
     scheduleRepositoryCheck(root, repo, 0);
-    repoState.set(root, { lastLabel: null, timer: null });
     return;
   }
 
