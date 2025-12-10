@@ -154,7 +154,7 @@ function scheduleRepositoryCheck(root, repo, debounceMs) {
       const head = repo.state && repo.state.HEAD;
       let branch = null;
       if (head) {
-        branch = head.name || (head.commit ? head.commit.substr(0,7) : null);
+        branch = head.name || (head.commit ? head.commit.substring(0, 7) : null);
       }
       await restartTerminalsForBranch(branch, repo);
     } catch (e) {
