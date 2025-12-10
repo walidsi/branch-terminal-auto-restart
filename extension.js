@@ -31,6 +31,7 @@ function activate(context) {
     Promise.resolve(gitExt.activate && gitExt.activate())
       .catch(() => {})
       .then(() => {
+        let gitApiSuccess = false;
         try {
           const git = gitExt.exports && gitExt.exports.getAPI && gitExt.exports.getAPI(1);
           if (git) {
@@ -47,16 +48,20 @@ function activate(context) {
               git.repositories.forEach(r => watchRepository(r));
             }
 
-            context.subscriptions.push(...disposables);
-            return;
+            gitApiSuccess = true;
           }
         } catch (e) {
           // fall through to file watcher fallback
           console.error('branch-terminal: git API error', e);
         }
 
-        // If we reach here, fallback to file watcher if enabled
-        if (cfg.get('fallbackToFileWatcher', true)) {
+        // Register any disposables that were created
+        if (disposables.length > 0) {
+          context.subscriptions.push(...disposables);
+        }
+
+        // If Git API didn't work, fallback to file watcher if enabled
+        if (!gitApiSuccess && cfg.get('fallbackToFileWatcher', true)) {
           setupFileWatcher(context);
         }
       });
