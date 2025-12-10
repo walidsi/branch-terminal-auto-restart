@@ -1,4 +1,5 @@
 const vscode = require('vscode');
+const path = require('path');
 
 let disposables = [];
 const repoState = new Map(); // key: repoRoot (string) -> { lastLabel, timer, pollInterval }
@@ -8,6 +9,9 @@ function activate(context) {
   if (!cfg.get('enable', true)) {
     return;
   }
+
+  // Clear disposables from any previous activation
+  disposables = [];
 
   // register manual command
   context.subscriptions.push(
@@ -31,15 +35,21 @@ function activate(context) {
     Promise.resolve(gitExt.activate && gitExt.activate())
       .catch(() => {})
       .then(() => {
+        let gitApiSuccess = false;
+        const localDisposables = []; // Track disposables created in this attempt
         try {
           const git = gitExt.exports && gitExt.exports.getAPI && gitExt.exports.getAPI(1);
           if (git) {
             // Listen for repositories opened/closed
             if (typeof git.onDidOpenRepository === 'function') {
-              disposables.push(git.onDidOpenRepository((r) => watchRepository(r)));
+              const d = git.onDidOpenRepository((r) => watchRepository(r));
+              localDisposables.push(d);
+              disposables.push(d);
             }
             if (typeof git.onDidCloseRepository === 'function') {
-              disposables.push(git.onDidCloseRepository((r) => unwatchRepository(r)));
+              const d = git.onDidCloseRepository((r) => unwatchRepository(r));
+              localDisposables.push(d);
+              disposables.push(d);
             }
 
             // Start watching existing repos
@@ -47,7 +57,9 @@ function activate(context) {
               git.repositories.forEach(r => watchRepository(r));
             }
 
-            context.subscriptions.push(...disposables);
+            gitApiSuccess = true;
+            // Removed incorrect usage of context.subscriptions.push(...disposables)
+            // Disposables are managed by the cleanup block below.
             return;
           }
         } catch (e) {
@@ -55,8 +67,13 @@ function activate(context) {
           console.error('branch-terminal: git API error', e);
         }
 
-        // If we reach here, fallback to file watcher if enabled
-        if (cfg.get('fallbackToFileWatcher', true)) {
+        // Register any disposables that were created in this attempt
+        if (localDisposables.length > 0) {
+          context.subscriptions.push(...localDisposables);
+        }
+
+        // If Git API didn't work, fallback to file watcher if enabled
+        if (!gitApiSuccess && cfg.get('fallbackToFileWatcher', true)) {
           setupFileWatcher(context);
         }
       });
@@ -76,6 +93,7 @@ function activate(context) {
       }
       repoState.clear();
       disposables.forEach(d => d && d.dispose && d.dispose());
+      disposables = []; // Clear array
     }
   });
 }
@@ -118,13 +136,13 @@ function watchRepository(repo) {
 
   // try to subscribe to repository state changes (Repository.state.onDidChange)
   if (repo.state && typeof repo.state.onDidChange === 'function') {
-    repoState.set(root, { lastLabel: null, timer: null });
     const disposable = repo.state.onDidChange(() => {
       scheduleRepositoryCheck(root, repo, debounceMs);
     });
     disposables.push(disposable);
     // initial sync
     scheduleRepositoryCheck(root, repo, 0);
+    repoState.set(root, { lastLabel: null, timer: null });
     return;
   }
 
@@ -154,7 +172,7 @@ function scheduleRepositoryCheck(root, repo, debounceMs) {
       const head = repo.state && repo.state.HEAD;
       let branch = null;
       if (head) {
-        branch = head.name || (head.commit ? head.commit.substring(0, 7) : null);
+        branch = head.name || (head.commit ? head.commit.substr(0,7) : null);
       }
       await restartTerminalsForBranch(branch, repo);
     } catch (e) {
@@ -171,7 +189,7 @@ async function restartTerminalsForBranch(branch, repo) {
   const focus = cfg.get('focusOnCreate', true);
   const initCmd = cfg.get('initCommand', '');
   const root = repo && repo.rootUri ? repo.rootUri.fsPath : 'workspace';
-  const repoName = repo && repo.rootUri ? repo.rootUri.path.split('/').pop() : null;
+  const repoName = repo && repo.rootUri ? path.basename(repo.rootUri.fsPath) : null;
   const label = branch ? `${prefix}${repoName ? repoName + '/' : ''}${branch}` : `${prefix}${repoName ? repoName + '/detached' : 'detached'}`;
 
   const s = repoState.get(root) || { lastLabel: null };
@@ -179,13 +197,9 @@ async function restartTerminalsForBranch(branch, repo) {
   s.lastLabel = label;
   repoState.set(root, s);
 
-  // Kill old integrated terminals that match our prefix (instead of killAll)
+  // Kill all integrated terminals and open a new one (Original behavior)
   try {
-    vscode.window.terminals.forEach(t => {
-      if (t.name.startsWith(prefix)) {
-        t.dispose();
-      }
-    });
+    await vscode.commands.executeCommand('workbench.action.terminal.killAll');
   } catch (e) {
     console.error('branch-terminal: failed to kill terminals', e);
   }
@@ -258,6 +272,7 @@ async function handleHeadFile(uri) {
     const pathParts = uri.fsPath.split(/[\\/]/);
     const gitIndex = pathParts.lastIndexOf('.git');
     const repoName = gitIndex > 0 ? pathParts[gitIndex - 1] : null;
+    const prefix = config.get('terminalNamePrefix', 'git:');
     const label = branch ? `${prefix}${repoName ? repoName + '/' : ''}${branch}` : `${prefix}${repoName ? repoName + '/detached' : 'detached'}`;
 
     // Avoid duplicate restarts (key off the URI)
@@ -267,13 +282,9 @@ async function handleHeadFile(uri) {
     s.lastLabel = label;
     repoState.set(key, s);
 
-    // Kill old integrated terminals that match our prefix (instead of killAll)
+    // Kill all integrated terminals and open a new one (Original behavior)
     try {
-      vscode.window.terminals.forEach(t => {
-        if (t.name.startsWith(prefix)) {
-          t.dispose();
-        }
-      });
+      await vscode.commands.executeCommand('workbench.action.terminal.killAll');
     } catch (e) {
       console.error('branch-terminal: failed to kill terminals', e);
     }
@@ -297,6 +308,7 @@ function deactivate() {
   }
   repoState.clear();
   disposables.forEach(d => d && d.dispose && d.dispose());
+  disposables = []; // Clear array
 }
 
 module.exports = { activate, deactivate };
