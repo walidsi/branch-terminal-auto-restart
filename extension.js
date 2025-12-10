@@ -98,7 +98,7 @@ async function tryRestartUsingGitApiOnce() {
 
     // Attempt to read HEAD info
     const head = repo.state && repo.state.HEAD;
-    const branch = head && (head.name || (head.commit ? head.commit.substring(0, 7) : null));
+    const branch = head && (head.name || (head.commit ? head.commit.substr(0,7) : null));
     await restartTerminalsForBranch(branch, repo);
     return true;
   } catch (e) {
@@ -179,12 +179,17 @@ async function restartTerminalsForBranch(branch, repo) {
   s.lastLabel = label;
   repoState.set(root, s);
 
-  // Kill all integrated terminals and open a new one
+  // Kill old integrated terminals that match our prefix (instead of killAll)
   try {
-    await vscode.commands.executeCommand('workbench.action.terminal.killAll');
+    vscode.window.terminals.forEach(t => {
+      if (t.name.startsWith(prefix)) {
+        t.dispose();
+      }
+    });
   } catch (e) {
     console.error('branch-terminal: failed to kill terminals', e);
   }
+
   const terminal = vscode.window.createTerminal({ name: label });
   if (focus) terminal.show(true);
   if (initCmd && initCmd.trim().length) {
@@ -218,8 +223,6 @@ function setupFileWatcher(context) {
     for (const uri of list) {
       schedule(uri);
     }
-  }).catch(err => {
-    console.error('branch-terminal: error finding HEAD files', err);
   });
 }
 
@@ -259,7 +262,17 @@ async function handleHeadFile(uri) {
     s.lastLabel = label;
     repoState.set(key, s);
 
-    await vscode.commands.executeCommand('workbench.action.terminal.killAll');
+    // Kill old integrated terminals that match our prefix (instead of killAll)
+    try {
+      vscode.window.terminals.forEach(t => {
+        if (t.name.startsWith(prefix)) {
+          t.dispose();
+        }
+      });
+    } catch (e) {
+      console.error('branch-terminal: failed to kill terminals', e);
+    }
+
     const terminal = vscode.window.createTerminal({ name: label });
     if (vscode.workspace.getConfiguration('branchTerminal').get('focusOnCreate', true)) {
       terminal.show(true);
