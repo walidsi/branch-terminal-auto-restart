@@ -46,8 +46,8 @@ function activate(context) {
             if (Array.isArray(git.repositories)) {
               git.repositories.forEach(r => watchRepository(r));
             }
-
-            context.subscriptions.push(...disposables);
+            // Removed incorrect usage of context.subscriptions.push(...disposables)
+            // Disposables are managed by the cleanup block below.
             return;
           }
         } catch (e) {
@@ -76,6 +76,7 @@ function activate(context) {
       }
       repoState.clear();
       disposables.forEach(d => d && d.dispose && d.dispose());
+      disposables = []; // Clear array
     }
   });
 }
@@ -118,13 +119,13 @@ function watchRepository(repo) {
 
   // try to subscribe to repository state changes (Repository.state.onDidChange)
   if (repo.state && typeof repo.state.onDidChange === 'function') {
-    repoState.set(root, { lastLabel: null, timer: null });
     const disposable = repo.state.onDidChange(() => {
       scheduleRepositoryCheck(root, repo, debounceMs);
     });
     disposables.push(disposable);
     // initial sync
     scheduleRepositoryCheck(root, repo, 0);
+    repoState.set(root, { lastLabel: null, timer: null });
     return;
   }
 
@@ -154,7 +155,7 @@ function scheduleRepositoryCheck(root, repo, debounceMs) {
       const head = repo.state && repo.state.HEAD;
       let branch = null;
       if (head) {
-        branch = head.name || (head.commit ? head.commit.substring(0, 7) : null);
+        branch = head.name || (head.commit ? head.commit.substr(0,7) : null);
       }
       await restartTerminalsForBranch(branch, repo);
     } catch (e) {
@@ -293,6 +294,7 @@ function deactivate() {
   }
   repoState.clear();
   disposables.forEach(d => d && d.dispose && d.dispose());
+  disposables = []; // Clear array
 }
 
 module.exports = { activate, deactivate };
