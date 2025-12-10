@@ -229,6 +229,12 @@ function setupFileWatcher(context) {
 async function handleHeadFile(uri) {
   if (!uri) return;
   try {
+    // Fetch configuration once at the beginning
+    const cfg = vscode.workspace.getConfiguration('branchTerminal');
+    const prefix = cfg.get('terminalNamePrefix', 'git:');
+    const focusOnCreate = cfg.get('focusOnCreate', true);
+    const initCmd = cfg.get('initCommand', '');
+
     const bytes = await vscode.workspace.fs.readFile(uri);
     const raw = Buffer.from(bytes).toString('utf8').trim();
     let branch = null;
@@ -252,7 +258,6 @@ async function handleHeadFile(uri) {
     const pathParts = uri.fsPath.split(/[\\/]/);
     const gitIndex = pathParts.lastIndexOf('.git');
     const repoName = gitIndex > 0 ? pathParts[gitIndex - 1] : null;
-    const prefix = vscode.workspace.getConfiguration('branchTerminal').get('terminalNamePrefix', 'git:');
     const label = branch ? `${prefix}${repoName ? repoName + '/' : ''}${branch}` : `${prefix}${repoName ? repoName + '/detached' : 'detached'}`;
 
     // Avoid duplicate restarts (key off the URI)
@@ -274,10 +279,9 @@ async function handleHeadFile(uri) {
     }
 
     const terminal = vscode.window.createTerminal({ name: label });
-    if (vscode.workspace.getConfiguration('branchTerminal').get('focusOnCreate', true)) {
+    if (focusOnCreate) {
       terminal.show(true);
     }
-    const initCmd = vscode.workspace.getConfiguration('branchTerminal').get('initCommand', '');
     if (initCmd && initCmd.trim().length) {
       terminal.sendText(initCmd, true);
     }
