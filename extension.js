@@ -1,4 +1,5 @@
 const vscode = require('vscode');
+const path = require('path');
 
 let disposables = [];
 const repoState = new Map(); // key: repoRoot (string) -> { lastLabel, timer, pollInterval }
@@ -171,7 +172,7 @@ async function restartTerminalsForBranch(branch, repo) {
   const focus = cfg.get('focusOnCreate', true);
   const initCmd = cfg.get('initCommand', '');
   const root = repo && repo.rootUri ? repo.rootUri.fsPath : 'workspace';
-  const repoName = repo && repo.rootUri ? repo.rootUri.path.split('/').pop() : null;
+  const repoName = repo && repo.rootUri ? path.basename(repo.rootUri.fsPath) : null;
   const label = branch ? `${prefix}${repoName ? repoName + '/' : ''}${branch}` : `${prefix}${repoName ? repoName + '/detached' : 'detached'}`;
 
   const s = repoState.get(root) || { lastLabel: null };
