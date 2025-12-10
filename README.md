@@ -22,10 +22,6 @@ This extension contributes the following settings:
 *   `branchTerminal.focusOnCreate`: Focus the terminal when it is created. (Default: `true`)
 *   `branchTerminal.initCommand`: Command to run when the terminal is initialized. (Default: empty)
 
-## Commands
-
-*   `Branch Terminal: Restart terminals now`: Manually trigger a terminal restart based on the current branch.
-
 ## Requirements
 
 *   VS Code 1.50.0 or higher.

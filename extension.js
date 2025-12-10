@@ -9,23 +9,6 @@ function activate(context) {
     return;
   }
 
-  // register manual command
-  context.subscriptions.push(
-    vscode.commands.registerCommand('branchTerminal.restartNow', async () => {
-      // Try to restart based on git API first; fallback to HEAD file
-      const restarted = await tryRestartUsingGitApiOnce();
-      if (!restarted) {
-        // find HEAD & handle - always try this if git API didn't work
-        const heads = await vscode.workspace.findFiles('**/.git/HEAD', '**/node_modules/**', 10);
-        if (heads.length) {
-          await handleHeadFile(heads[0]);
-        } else {
-          vscode.window.showWarningMessage('Branch Terminal: No Git repository found in workspace.');
-        }
-      }
-    })
-  );
-
   // Try to hook the built-in Git extension
   const gitExt = vscode.extensions.getExtension('vscode.git');
   if (gitExt) {
