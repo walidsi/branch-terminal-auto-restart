@@ -14,11 +14,13 @@ function activate(context) {
     vscode.commands.registerCommand('branchTerminal.restartNow', async () => {
       // Try to restart based on git API first; fallback to HEAD file
       const restarted = await tryRestartUsingGitApiOnce();
-      if (!restarted && cfg.get('fallbackToFileWatcher', true)) {
-        // find HEAD & handle
+      if (!restarted) {
+        // find HEAD & handle - always try this if git API didn't work
         const heads = await vscode.workspace.findFiles('**/.git/HEAD', '**/node_modules/**', 10);
         if (heads.length) {
           await handleHeadFile(heads[0]);
+        } else {
+          vscode.window.showWarningMessage('Branch Terminal: No Git repository found in workspace.');
         }
       }
     })
