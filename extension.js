@@ -98,7 +98,7 @@ async function tryRestartUsingGitApiOnce() {
 
     // Attempt to read HEAD info
     const head = repo.state && repo.state.HEAD;
-    const branch = head && (head.name || (head.commit ? head.commit.substr(0,7) : null));
+    const branch = head && (head.name || (head.commit ? head.commit.substring(0, 7) : null));
     await restartTerminalsForBranch(branch, repo);
     return true;
   } catch (e) {
