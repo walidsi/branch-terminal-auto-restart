@@ -218,6 +218,8 @@ function setupFileWatcher(context) {
     for (const uri of list) {
       schedule(uri);
     }
+  }).catch(err => {
+    console.error('branch-terminal: error finding HEAD files', err);
   });
 }
 
