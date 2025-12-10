@@ -1,4 +1,5 @@
 const vscode = require('vscode');
+const path = require('path');
 
 let disposables = [];
 const repoState = new Map(); // key: repoRoot (string) -> { lastLabel, timer, pollInterval }
@@ -57,6 +58,9 @@ function activate(context) {
             }
 
             gitApiSuccess = true;
+            // Removed incorrect usage of context.subscriptions.push(...disposables)
+            // Disposables are managed by the cleanup block below.
+            return;
           }
         } catch (e) {
           // fall through to file watcher fallback
@@ -89,7 +93,7 @@ function activate(context) {
       }
       repoState.clear();
       disposables.forEach(d => d && d.dispose && d.dispose());
-      disposables = [];
+      disposables = []; // Clear array
     }
   });
 }
@@ -168,7 +172,7 @@ function scheduleRepositoryCheck(root, repo, debounceMs) {
       const head = repo.state && repo.state.HEAD;
       let branch = null;
       if (head) {
-        branch = head.name || (head.commit ? head.commit.substring(0, 7) : null);
+        branch = head.name || (head.commit ? head.commit.substr(0,7) : null);
       }
       await restartTerminalsForBranch(branch, repo);
     } catch (e) {
@@ -185,7 +189,7 @@ async function restartTerminalsForBranch(branch, repo) {
   const focus = cfg.get('focusOnCreate', true);
   const initCmd = cfg.get('initCommand', '');
   const root = repo && repo.rootUri ? repo.rootUri.fsPath : 'workspace';
-  const repoName = repo && repo.rootUri ? repo.rootUri.path.split('/').pop() : null;
+  const repoName = repo && repo.rootUri ? path.basename(repo.rootUri.fsPath) : null;
   const label = branch ? `${prefix}${repoName ? repoName + '/' : ''}${branch}` : `${prefix}${repoName ? repoName + '/detached' : 'detached'}`;
 
   const s = repoState.get(root) || { lastLabel: null };
@@ -193,13 +197,9 @@ async function restartTerminalsForBranch(branch, repo) {
   s.lastLabel = label;
   repoState.set(root, s);
 
-  // Kill old integrated terminals that match our prefix (instead of killAll)
+  // Kill all integrated terminals and open a new one (Original behavior)
   try {
-    vscode.window.terminals.forEach(t => {
-      if (t.name.startsWith(prefix)) {
-        t.dispose();
-      }
-    });
+    await vscode.commands.executeCommand('workbench.action.terminal.killAll');
   } catch (e) {
     console.error('branch-terminal: failed to kill terminals', e);
   }
@@ -243,6 +243,7 @@ function setupFileWatcher(context) {
 async function handleHeadFile(uri) {
   if (!uri) return;
   try {
+    const config = vscode.workspace.getConfiguration('branchTerminal');
     const bytes = await vscode.workspace.fs.readFile(uri);
     const raw = Buffer.from(bytes).toString('utf8').trim();
     let branch = null;
@@ -266,7 +267,7 @@ async function handleHeadFile(uri) {
     const pathParts = uri.fsPath.split(/[\\/]/);
     const gitIndex = pathParts.lastIndexOf('.git');
     const repoName = gitIndex > 0 ? pathParts[gitIndex - 1] : null;
-    const prefix = vscode.workspace.getConfiguration('branchTerminal').get('terminalNamePrefix', 'git:');
+    const prefix = config.get('terminalNamePrefix', 'git:');
     const label = branch ? `${prefix}${repoName ? repoName + '/' : ''}${branch}` : `${prefix}${repoName ? repoName + '/detached' : 'detached'}`;
 
     // Avoid duplicate restarts (key off the URI)
@@ -276,22 +277,18 @@ async function handleHeadFile(uri) {
     s.lastLabel = label;
     repoState.set(key, s);
 
-    // Kill old integrated terminals that match our prefix (instead of killAll)
+    // Kill all integrated terminals and open a new one (Original behavior)
     try {
-      vscode.window.terminals.forEach(t => {
-        if (t.name.startsWith(prefix)) {
-          t.dispose();
-        }
-      });
+      await vscode.commands.executeCommand('workbench.action.terminal.killAll');
     } catch (e) {
       console.error('branch-terminal: failed to kill terminals', e);
     }
 
     const terminal = vscode.window.createTerminal({ name: label });
-    if (vscode.workspace.getConfiguration('branchTerminal').get('focusOnCreate', true)) {
+    if (config.get('focusOnCreate', true)) {
       terminal.show(true);
     }
-    const initCmd = vscode.workspace.getConfiguration('branchTerminal').get('initCommand', '');
+    const initCmd = config.get('initCommand', '');
     if (initCmd && initCmd.trim().length) {
       terminal.sendText(initCmd, true);
     }
@@ -307,6 +304,7 @@ function deactivate() {
   }
   repoState.clear();
   disposables.forEach(d => d && d.dispose && d.dispose());
+  disposables = []; // Clear array
 }
 
 module.exports = { activate, deactivate };
