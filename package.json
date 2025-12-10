@@ -1,16 +1,31 @@
-﻿{
+{
   "name": "branch-terminal-auto-restart",
   "displayName": "Branch Terminal Auto Restart",
   "description": "Automatically restart the integrated terminal when the Git branch changes.",
   "version": "0.1.0",
-  "publisher": "Walid Ismail",
+  "publisher": "WalidIsmail",
   "repository": {
     "type": "git",
     "url": "https://github.com/walidsi/branch-terminal-auto-restart"
   },
+  "bugs": {
+    "url": "https://github.com/walidsi/branch-terminal-auto-restart/issues"
+  },
+  "homepage": "https://github.com/walidsi/branch-terminal-auto-restart/blob/master/README.md",
+  "icon": "images/icon.png",
   "engines": {
     "vscode": "^1.50.0"
   },
+  "categories": [
+    "Terminal"
+  ],
+  "keywords": [
+    "git",
+    "terminal",
+    "branch",
+    "restart",
+    "auto"
+  ],
   "main": "./extension.js",
   "activationEvents": [
     "onStartupFinished"
@@ -21,10 +36,65 @@
         "command": "branchTerminal.restartNow",
         "title": "Branch Terminal: Restart terminals now"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Branch Terminal Auto Restart",
+      "properties": {
+        "branchTerminal.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable or disable the extension."
+        },
+        "branchTerminal.fallbackToFileWatcher": {
+          "type": "boolean",
+          "default": true,
+          "description": "Fallback to file watcher if Git extension is not available."
+        },
+        "branchTerminal.debounceMs": {
+          "type": "integer",
+          "default": 350,
+          "description": "Debounce time in milliseconds before restarting the terminal."
+        },
+        "branchTerminal.terminalNamePrefix": {
+          "type": "string",
+          "default": "git:",
+          "description": "Prefix for the terminal name."
+        },
+        "branchTerminal.focusOnCreate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Focus the terminal when it is created."
+        },
+        "branchTerminal.initCommand": {
+          "type": "string",
+          "default": "",
+          "description": "Command to run when the terminal is initialized."
+        }
+      }
+    }
   },
   "scripts": {
-    "package": "npx vsce package"
+    "package": "npx vsce package",
+    "lint": "eslint .",
+    "test": "node ./test/runTest.js"
   },
-  "files": ["extension.js","README.md","LICENSE","CHANGELOG.md","images/**",".github/**"]
+  "files": [
+    "extension.js",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "images/**",
+    ".github/**"
+  ],
+  "devDependencies": {
+    "@types/glob": "^7.1.3",
+    "@types/mocha": "^8.0.4",
+    "@types/node": "^12.11.7",
+    "@types/vscode": "^1.50.0",
+    "eslint": "^7.19.0",
+    "glob": "^7.1.6",
+    "mocha": "^8.2.1",
+    "typescript": "^4.1.3",
+    "vscode-test": "^1.5.0"
+  }
 }
