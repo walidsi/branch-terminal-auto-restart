@@ -3,7 +3,7 @@
   "displayName": "Branch Terminal Auto Restart",
   "description": "Automatically restart the integrated terminal when the Git branch changes.",
   "version": "0.1.0",
-  "publisher": "WalidIsmail",
+  "publisher": "craft-labs",
   "repository": {
     "type": "git",
     "url": "https://github.com/walidsi/branch-terminal-auto-restart"
