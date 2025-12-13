@@ -9,6 +9,13 @@ function activate(context) {
     return;
   }
 
+  // Register the manual restart command
+  const manualRestartCommand = vscode.commands.registerCommand('branchTerminal.restartManually', async () => {
+    console.log('Manual terminal restart triggered via command palette');
+    await tryRestartUsingGitApiOnce();
+  });
+  context.subscriptions.push(manualRestartCommand);
+
   // Try to hook the built-in Git extension
   const gitExt = vscode.extensions.getExtension('vscode.git');
   if (gitExt) {

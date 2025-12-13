@@ -31,6 +31,12 @@
     "onStartupFinished"
   ],
   "contributes": {
+    "commands": [
+      {
+        "command": "branchTerminal.restartManually",
+        "title": "Branch Terminal: Restart Terminal Manually"
+      }
+    ],
     "configuration": {
       "title": "Branch Terminal Auto Restart",
       "properties": {
