@@ -3,7 +3,35 @@ const vscode = require('vscode');
 let disposables = [];
 const repoState = new Map(); // key: repoRoot (string) -> { lastLabel, timer, pollInterval }
 
+// Command to manually trigger terminal kill and restart
+async function manualRestartTerminals() {
+  const cfg = vscode.workspace.getConfiguration('branchTerminal');
+  const prefix = cfg.get('terminalNamePrefix', 'git:');
+  const label = `${prefix}manual-restart`;
+
+  // Kill all terminals
+  try {
+    await vscode.commands.executeCommand('workbench.action.terminal.killAll');
+  } catch (e) {
+    console.error('branch-terminal: failed to kill terminals', e);
+  }
+
+  // Create new terminal
+  const terminal = vscode.window.createTerminal({ name: label });
+  if (cfg.get('focusOnCreate', true)) {
+    terminal.show(true);
+  }
+  const initCmd = cfg.get('initCommand', '');
+  if (initCmd && initCmd.trim().length) {
+    terminal.sendText(initCmd, true);
+  }
+}
+
 function activate(context) {
+  // Register the manual restart command
+  const restartCommand = vscode.commands.registerCommand('branchTerminal.manualRestart', manualRestartTerminals);
+  context.subscriptions.push(restartCommand);
+
   const cfg = vscode.workspace.getConfiguration('branchTerminal');
   if (!cfg.get('enable', true)) {
     return;
