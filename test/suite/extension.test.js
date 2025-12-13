@@ -17,18 +17,23 @@ suite('Extension Test Suite', () => {
 		assert.ok(commandExists, 'The command branchTerminal.restartManually should be registered');
 	});
 
-	test('Executing the command should trigger terminal restart', async () => {
-		// Mock the tryRestartUsingGitApiOnce functionality by spying on relevant methods
+	test('Executing the command should be callable', async () => {
+		// Verify the command exists and can be executed without errors
+		// In a real test environment, we would spy on the tryRestartUsingGitApiOnce function
+		// to verify it's called when the command is executed, but this requires more complex
+		// module mocking that's difficult to set up in this extension test environment
+		
 		const commands = await vscode.commands.getCommands(true);
 		const commandExists = commands.includes('branchTerminal.restartManually');
 		
-		if (commandExists) {
-			// Execute the command
+		assert.ok(commandExists, 'Command should be registered');
+		
+		// Execute the command to ensure it runs without errors
+		try {
 			await vscode.commands.executeCommand('branchTerminal.restartManually');
-			// If we reach this point without error, the command executed successfully
 			assert.ok(true, 'Command executed without throwing an error');
-		} else {
-			assert.fail('Command was not found');
+		} catch (error) {
+			assert.fail(`Command threw an error: ${error.message}`);
 		}
 	});
 });
