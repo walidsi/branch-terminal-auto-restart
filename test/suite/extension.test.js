@@ -17,18 +17,10 @@ suite('Extension Test Suite', () => {
 		assert.ok(commandExists, 'The command branchTerminal.restartManually should be registered');
 	});
 
-	test('Executing the command should trigger terminal restart', async () => {
-		// Mock the tryRestartUsingGitApiOnce functionality by spying on relevant methods
-		const commands = await vscode.commands.getCommands(true);
-		const commandExists = commands.includes('branchTerminal.restartManually');
-		
-		if (commandExists) {
-			// Execute the command
-			await vscode.commands.executeCommand('branchTerminal.restartManually');
-			// If we reach this point without error, the command executed successfully
-			assert.ok(true, 'Command executed without throwing an error');
-		} else {
-			assert.fail('Command was not found');
-		}
+	test('Executing the command should not throw an error', async () => {
+		// Execute the command - it should complete without throwing
+		await vscode.commands.executeCommand('branchTerminal.restartManually');
+		// If we reach this point without error, the command executed successfully
+		assert.ok(true, 'Command executed without throwing an error');
 	});
 });
