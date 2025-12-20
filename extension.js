@@ -131,7 +131,7 @@ function watchRepository(repo) {
   const interval = setInterval(() => {
     scheduleRepositoryCheck(root, repo, debounceMs);
   }, pollIntervalMs);
-  repoState.set(root, { lastLabel: null, pollInterval: interval, timer: null });
+  repoState.set(root, { lastLabel: null, pollInterval: interval, timer: null, disposable: null });
 }
 
 function unwatchRepository(repo) {
