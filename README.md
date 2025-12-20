@@ -33,6 +33,6 @@ This extension contributes the following settings:
 
 ## Release Notes
 
-### 0.1.0
+### 0.1.1
 
 Initial release of Branch Terminal Auto Restart.
