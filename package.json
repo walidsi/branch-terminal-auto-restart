@@ -2,7 +2,7 @@
   "name": "branch-terminal-auto-restart",
   "displayName": "Branch Terminal Auto Restart",
   "description": "Automatically restart the integrated terminal when the Git branch changes.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "craft-labs",
   "repository": {
     "type": "git",
