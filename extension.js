@@ -1,7 +1,7 @@
 const vscode = require('vscode');
 
 let disposables = [];
-const repoState = new Map(); // key: repoRoot (string) -> { lastLabel, timer, pollInterval }
+const repoState = new Map(); // key: repoRoot (string) -> { lastLabel, timer, pollInterval, disposable }
 
 function activate(context) {
   const cfg = vscode.workspace.getConfiguration('branchTerminal');
@@ -110,7 +110,7 @@ function watchRepository(repo) {
     disposables.push(disposable);
     // initial sync
     scheduleRepositoryCheck(root, repo, 0);
-    repoState.set(root, { lastLabel: null, timer: null });
+    repoState.set(root, { lastLabel: null, timer: null, disposable });
     return;
   }
 
@@ -122,7 +122,7 @@ function watchRepository(repo) {
     disposables.push(disposable);
     // initial sync
     scheduleRepositoryCheck(root, repo, 0);
-    repoState.set(root, { lastLabel: null, timer: null });
+    repoState.set(root, { lastLabel: null, timer: null, disposable });
     return;
   }
 
@@ -131,7 +131,7 @@ function watchRepository(repo) {
   const interval = setInterval(() => {
     scheduleRepositoryCheck(root, repo, debounceMs);
   }, pollIntervalMs);
-  repoState.set(root, { lastLabel: null, pollInterval: interval, timer: null });
+  repoState.set(root, { lastLabel: null, pollInterval: interval, timer: null, disposable: null });
 }
 
 function unwatchRepository(repo) {
@@ -141,6 +141,7 @@ function unwatchRepository(repo) {
   if (!s) return;
   if (s.timer) clearTimeout(s.timer);
   if (s.pollInterval) clearInterval(s.pollInterval);
+  if (s.disposable) s.disposable.dispose();
   repoState.delete(root);
 }
 
