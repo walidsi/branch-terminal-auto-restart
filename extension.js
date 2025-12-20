@@ -1,7 +1,7 @@
 const vscode = require('vscode');
 
 let disposables = [];
-const repoState = new Map(); // key: repoRoot (string) -> { lastLabel, timer, pollInterval }
+const repoState = new Map(); // key: repoRoot (string) -> { lastLabel, timer, pollInterval, disposable }
 
 function activate(context) {
   const cfg = vscode.workspace.getConfiguration('branchTerminal');
