@@ -102,7 +102,19 @@ function watchRepository(repo) {
   const cfg = vscode.workspace.getConfiguration('branchTerminal');
   const debounceMs = cfg.get('debounceMs', 350);
 
-  // try to subscribe to repository state changes (Repository.state.onDidChange)
+  // Prefer repository-level change events when available
+  if (typeof repo.onDidChangeState === 'function') {
+    const disposable = repo.onDidChangeState(() => {
+      scheduleRepositoryCheck(root, repo, debounceMs);
+    });
+    disposables.push(disposable);
+    // initial sync
+    scheduleRepositoryCheck(root, repo, 0);
+    repoState.set(root, { lastLabel: null, timer: null });
+    return;
+  }
+
+  // Fallback: subscribe to state changes (older Git API)
   if (repo.state && typeof repo.state.onDidChange === 'function') {
     const disposable = repo.state.onDidChange(() => {
       scheduleRepositoryCheck(root, repo, debounceMs);
