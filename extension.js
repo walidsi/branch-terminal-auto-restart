@@ -14,7 +14,7 @@ function activate(context) {
   if (gitExt) {
     // ensure it is activated, then get API
     Promise.resolve(gitExt.activate && gitExt.activate())
-      .catch(() => {})
+      .catch(() => { })
       .then(() => {
         try {
           const git = gitExt.exports && gitExt.exports.getAPI && gitExt.exports.getAPI(1);
@@ -84,7 +84,7 @@ async function tryRestartUsingGitApiOnce() {
 
     // Attempt to read HEAD info
     const head = repo.state && repo.state.HEAD;
-    const branch = head && (head.name || (head.commit ? head.commit.substr(0,7) : null));
+    const branch = head && (head.name || (head.commit ? head.commit.substr(0, 7) : null));
     await restartTerminalsForBranch(branch, repo);
     return true;
   } catch (e) {
@@ -153,7 +153,7 @@ function scheduleRepositoryCheck(root, repo, debounceMs) {
       const head = repo.state && repo.state.HEAD;
       let branch = null;
       if (head) {
-        branch = head.name || (head.commit ? head.commit.substr(0,7) : null);
+        branch = head.name || (head.commit ? head.commit.substr(0, 7) : null);
       }
       await restartTerminalsForBranch(branch, repo);
     } catch (e) {
@@ -178,15 +178,26 @@ async function restartTerminalsForBranch(branch, repo) {
   s.lastLabel = label;
   repoState.set(root, s);
 
-  // Kill all integrated terminals and open a new one (Original behavior)
+  const terminal = vscode.window.createTerminal({ name: label });
+
+  // Kill all integrated terminals manually AFTER creating the new one
   try {
-    await vscode.commands.executeCommand('workbench.action.terminal.killAll');
+    const terminals = vscode.window.terminals || [];
+    terminals.forEach(t => {
+      if (t !== terminal) {
+        try {
+          t.dispose();
+        } catch (err) {
+          console.error('branch-terminal: error disposing terminal', err);
+        }
+      }
+    });
   } catch (e) {
-    console.error('branch-terminal: failed to kill terminals', e);
+    console.error('branch-terminal: failed to dispose terminals', e);
   }
 
-  const terminal = vscode.window.createTerminal({ name: label });
-  if (focus) terminal.show(true);
+  // focus: if true, we want to TAKE focus (preserveFocus: false)
+  if (focus) terminal.show(false);
   if (initCmd && initCmd.trim().length) {
     // send command and execute
     terminal.sendText(initCmd, true);
@@ -257,16 +268,26 @@ async function handleHeadFile(uri) {
     s.lastLabel = label;
     repoState.set(key, s);
 
-    // Kill all integrated terminals and open a new one (Original behavior)
+    const terminal = vscode.window.createTerminal({ name: label });
+
+    // Kill all integrated terminals manually AFTER creating the new one
     try {
-      await vscode.commands.executeCommand('workbench.action.terminal.killAll');
+      const terminals = vscode.window.terminals || [];
+      terminals.forEach(t => {
+        if (t !== terminal) {
+          try {
+            t.dispose();
+          } catch (err) {
+            console.error('branch-terminal: (fallback) error disposing terminal', err);
+          }
+        }
+      });
     } catch (e) {
-      console.error('branch-terminal: failed to kill terminals', e);
+      console.error('branch-terminal: failed to dispose terminals', e);
     }
 
-    const terminal = vscode.window.createTerminal({ name: label });
     if (vscode.workspace.getConfiguration('branchTerminal').get('focusOnCreate', true)) {
-      terminal.show(true);
+      terminal.show(false);
     }
     const initCmd = vscode.workspace.getConfiguration('branchTerminal').get('initCommand', '');
     if (initCmd && initCmd.trim().length) {
